@@ -17,4 +17,4 @@ By fitting this ellipse to the data, we can use properties of the ellipse to hel
 * compare whether a single year is significantly different from a climatology.
 * consider the likely range of current directions.
 
-For further details refer to the attached [PDF]()
+For further details refer to the attached [PDF](CurrUncertEllipses_documentation.pdf)
