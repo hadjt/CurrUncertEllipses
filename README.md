@@ -17,4 +17,37 @@ By fitting this ellipse to the data, we can use properties of the ellipse to hel
 * compare whether a single year is significantly different from a climatology.
 * consider the likely range of current directions.
 
+
+
+----
+
+## Loading the toolbox
+All the required functions are within `CurrUncertEllipses.py`.
+`CurrUncertEllipses_examples.py` gives example analysis and figures.
+`CurrUncertEllipses_ChiSqProb.py` provides tools to select the critical ellipse size (in standard deviations). Example data sets are given in `baroc_*.nc`.
+Once downloaded, and copied to the correct location, the toolbox can be imported with:
+```
+import CurrUncertEllipses
+```
+
+## Data
+The toolbox works on numpy arrays of the U and V component of the residual velocities. These should have three dimensions, with dimension `[0]` being time.
+The github include example data sets (`baroc_*.nc`). `CurrUncertEllipses_examples.py` gives an example of how to load the example data set, with a loading function – the default data directory (datadir) is set as `./` – this may need to be changed for your system.
+
+## Quick guide
+```
+#Data with time as Dimension[0], and latitude and longitude in dimensions [1] and [2].
+# U_mat_1, V_mat_1, U_mat_2, V_mat_2
+#Extract ellipse coefficients
+n_std = 2.45
+ellipse_dict = {}
+ellipse_dict ['UV_1'] = ellipse_params_add_to_dict(ellipse_params(U_mat_1, V_mat_1, n_std=n_std))
+ellipse_dict ['UV_2'] = ellipse_params_add_to_dict(ellipse_params(U_mat_2, V_mat_2, n_std=n_std))
+#Compare two datasets
+overlap_dict = overlapping_ellipse_area_from_dict( ellipse_dict['UV_1'],ellipse_dict['UV_2'])
+OVL_dict = ellipse_overlap_coefficient_pdf_from_dict( ellipse_dict['UV_1'],ellipse_dict['UV_2'])
+```
+
+---
+
 For further details refer to the attached [PDF](CurrUncertEllipses_documentation.pdf)
