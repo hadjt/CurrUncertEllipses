@@ -16,8 +16,6 @@ import xarray
 import os
 
 
-#sys.path.append('/net/home/h01/hadjt/workspace/python3')
-
 
 
 
@@ -1478,6 +1476,84 @@ def overlapping_ellipse_area_pdf(
     print('Finished ',datetime.now())
 
     return overlap_1,overlap_2,overlap_and,overlap_or,area_1,area_2,overlap_1not2,overlap_2not1,overlap_xor
+
+
+
+
+
+def ellipse_params_uv_stats(U_mean,V_mean,UV_mean,U_std,V_std,U_var,V_var,UV_cov,ang_xy, n_std = 2.45,pnt_x = 0, pnt_y = 0):
+
+    #U_mat,V_mat = U_mean*np.ma.masked,V_mean*np.ma.masked
+    UV_mat = np.sqrt(V_mean**2+U_mean**2)*np.ma.masked
+
+
+    X_elip_amp,Y_elip_amp,X_elip_phi,Y_elip_phi,X_elip_phi_cos,Y_elip_phi_cos = confidence_ellipse_uv_stats_parametric_equation(U_mean,V_mean,U_var,V_var,UV_cov, n_std = n_std)
+    qmax,qmin, ecc, theta_max, zero_ang = ellipse_parameters_from_parametric_equation(X_elip_amp,Y_elip_amp,X_elip_phi,Y_elip_phi,U_mean,V_mean)
+    XY_std_dir_corr,XY_zero_num_std_from_mean,pX_dir,pY_dir = find_num_std_to_point(U_mean,V_mean,X_elip_amp,Y_elip_amp,X_elip_phi,Y_elip_phi)
+    y_tang_1,y_tang_2,ang_wid = find_tangent_to_parametric_ellipse_at_a_point(U_mean,V_mean,X_elip_amp,Y_elip_amp,X_elip_phi,Y_elip_phi,pnt_x = pnt_x, pnt_y = pnt_y, n_std = n_std)
+    foci_max,foci_x_1,foci_y_1,foci_x_2,foci_y_2 = find_parameteric_ellipse_foci(qmax, qmin,theta_max,U_mean,V_mean, n_std = n_std)
+
+
+    return U_mean,V_mean,UV_mean,U_std,V_std,U_var,V_var,UV_cov,UV_mat,ang_xy,X_elip_amp,Y_elip_amp,X_elip_phi,Y_elip_phi,X_elip_phi_cos,Y_elip_phi_cos,qmax,qmin, ecc, theta_max, zero_ang,XY_std_dir_corr,XY_zero_num_std_from_mean,pX_dir,pY_dir,y_tang_1,y_tang_2,ang_wid,foci_max,foci_x_1,foci_y_1,foci_x_2,foci_y_2
+
+
+
+
+
+def ens_ellipse_overlap_coefficient_pdf_dict(ens_dict,    npnt_counting = 100, nstd_lims = 4):
+    '''
+    ens_dict = {}
+    for ens in tmp_ens_mat: ens_dict[ens] = ellipse_params_add_to_dict(ellipse_params_uv_stats(...))
+    '''
+
+    tmp_ens_mat = [ss for ss in ens_dict.keys()]
+    tmp_n_ens = len(tmp_ens_mat)
+    eg_ens = tmp_ens_mat[0]
+    nlat, nlon = ens_dict[eg_ens]['X_elip_amp'].shape
+
+
+    #gauss_1_2_overlapping_coef = np.ma.zeros((nlat, nlon))*np.ma.masked
+    ens_min_gauss_mat = np.ma.zeros((nlat, nlon))*np.ma.masked
+
+    twoaltone = np.array(([-1,1]))
+    #ii,jj = 120,120
+    for ii in range(nlon):
+        if (ii%50) == 0: print('ii ',ii,datetime.now())
+        for jj in range(nlat):
+            if ens_dict[eg_ens]['X_elip_amp'].mask[jj,ii]: continue
+
+            nstd_lims = 4
+
+
+            tmp_Xlim_lst = []
+            tmp_Ylim_lst = []
+
+            for ei,tmp_ens in enumerate(tmp_ens_mat):
+                tmp_Xlim_lst.append(nstd_lims*(ens_dict[tmp_ens]['X_elip_amp'][jj,ii])*twoaltone+ens_dict[tmp_ens]['U_mean'][jj,ii])
+                tmp_Ylim_lst.append(nstd_lims*(ens_dict[tmp_ens]['Y_elip_amp'][jj,ii])*twoaltone+ens_dict[tmp_ens]['V_mean'][jj,ii])
+
+            tmp_Xlim_mat = np.array(tmp_Xlim_lst)
+            tmp_Ylim_mat = np.array(tmp_Ylim_lst)
+
+            tmpx = np.linspace(tmp_Xlim_mat.min(),tmp_Xlim_mat.max(),npnt_counting)
+            tmpy = np.linspace(tmp_Ylim_mat.min(),tmp_Ylim_mat.max(),npnt_counting)
+
+
+            xmat, ymat = np.meshgrid(tmpx,tmpy)
+
+            dx = np.diff(tmpx).mean()
+            dy = np.diff(tmpy).mean()
+
+            #pdb.set_trace()
+
+            tmp_gauss_mat =  np.zeros((tmp_n_ens,npnt_counting, npnt_counting))
+
+
+            for ei,tmp_ens in enumerate(tmp_ens_mat):                tmp_gauss_mat[ei,:,:] =  gauss_func_2d(xmat,ymat, ens_dict[tmp_ens]['U_mean'][jj,ii],ens_dict[tmp_ens]['V_mean'][jj,ii],ens_dict[tmp_ens]['U_var'][jj,ii],ens_dict[tmp_ens]['V_var'][jj,ii],ens_dict[tmp_ens]['UV_cov'][jj,ii])[0]
+            #pdb.set_trace()
+            ens_min_gauss_mat[jj,ii] = dx*dy*tmp_gauss_mat.min(axis = 0).sum()
+
+    return ens_min_gauss_mat
 
 #def main():
 #
